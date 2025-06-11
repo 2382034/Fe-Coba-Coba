@@ -1,4 +1,3 @@
-// src/pages/Login.tsx
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../utils/AuthProvider"; // Pastikan path ini benar
@@ -7,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import toast from 'react-hot-toast'; // Import toast untuk notifikasi
 
 export type LoginInput = {
-  email: string; // Atau username, sesuaikan dengan backend Anda
+  email: string; // Di form ini adalah 'email', tapi bisa berfungsi sebagai username
   password: string;
 };
 
@@ -24,7 +23,8 @@ const Login = () => {
 
   const handleLogin = async (data: LoginInput) => {
     try {
-      // DIUBAH: Tipe 'user' diubah menjadi 'any' untuk menerima struktur apa pun dari backend
+      // DIUBAH: Tipe 'user' diubah menjadi 'any' untuk menerima struktur apa pun dari backend.
+      // Ini akan menyelesaikan error ketidakcocokan tipe data.
       const res = await axios.post<{ accessToken: string; user: any }>(
         "/auth/login", 
         {
@@ -33,9 +33,9 @@ const Login = () => {
         }
       );
 
-      // Pengecekan runtime tetap ada untuk memastikan data valid
+      // Pengecekan runtime tetap ada untuk memastikan data dari server valid
       if (res.data && res.data.accessToken && res.data.user && res.data.user.role) {
-        // Baris ini sekarang seharusnya tidak error karena tipe user lebih fleksibel
+        // Baris ini sekarang seharusnya tidak menyebabkan error tipe lagi
         login(res.data.accessToken, res.data.user);
         toast.success("Login berhasil!");
         navigate("/");
@@ -88,9 +88,9 @@ const Login = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Username atau Email</label>
               <input
-                type="text" // Menggunakan text agar bisa untuk username atau email
+                type="text"
                 className={`${inputStyle} ${errors.email ? errorBorderStyle : defaultBorderStyle}`}
-                {...register("email", { required: "Field ini wajib diisi" })} // Menggunakan 'email' sesuai LoginInput
+                {...register("email", { required: "Field ini wajib diisi" })}
                 placeholder="username atau email@example.com"
               />
               {errors.email && (
@@ -118,8 +118,11 @@ const Login = () => {
             </button>
           </form>
           <p className="mt-8 text-center text-sm text-gray-600">
-            Belum punya akun?{" "}
-            <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+            Sudah punya akun?{" "}
+            <Link
+              to="/register"
+              className="text-blue-600 font-semibold hover:underline"
+            >
               Daftar di sini
             </Link>
           </p>
