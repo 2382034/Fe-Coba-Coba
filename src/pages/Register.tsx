@@ -1,3 +1,4 @@
+// src/pages/Register.tsx
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,7 +9,7 @@ export type RegisterInput = {
   email: string;
   username: string;
   password: string;
-  role: 'user' | 'admin'; // Tambahkan role di sini
+  role: 'user' | 'admin';
 };
 
 const Register = () => {
@@ -26,12 +27,12 @@ const Register = () => {
 
   const handleRegister = async (data: RegisterInput) => {
     try {
-      // Pastikan backend Anda siap menerima dan memvalidasi 'role'
-      await axios.post("/api/auth/register", {
+      // DIUBAH: Path endpoint sekarang tidak lagi diawali dengan /api
+      await axios.post("/auth/register", {
         email: data.email,
         username: data.username,
         password: data.password,
-        role: data.role, // Kirim role yang dipilih
+        role: data.role,
       });
       toast.success("Registrasi berhasil! Silakan login.");
       navigate("/login");
@@ -57,21 +58,21 @@ const Register = () => {
         <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
         </svg>
-         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">Selamat Datang!</h1>
-         <p className="text-lg md:text-xl text-center mb-8 max-w-md opacity-90">
-           Buat akun untuk mengakses Portal Data Mahasiswa. Kelola data diri, lihat informasi akademik, dan banyak lagi.
-         </p>
-         <Link
-            to="/login"
-            className="flex items-center bg-white text-blue-700 font-semibold rounded-lg py-3 px-8 hover:bg-blue-50 transition-colors shadow-md"
-          >
-            <span className="mr-2">Sudah punya akun? Login</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10 17 15 12 10 7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-         </Link>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">Selamat Datang!</h1>
+        <p className="text-lg md:text-xl text-center mb-8 max-w-md opacity-90">
+          Buat akun untuk mengakses Portal Data Mahasiswa. Kelola data diri, lihat informasi akademik, dan banyak lagi.
+        </p>
+        <Link
+          to="/login"
+          className="flex items-center bg-white text-blue-700 font-semibold rounded-lg py-3 px-8 hover:bg-blue-50 transition-colors shadow-md"
+        >
+          <span className="mr-2">Sudah punya akun? Login</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+        </Link>
       </div>
 
       {/* Sisi Kanan - Form Registrasi */}
@@ -80,7 +81,6 @@ const Register = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-8">
             Buat Akun Baru
           </h2>
-
           <form
             className="space-y-5"
             onSubmit={handleSubmit((data) => mutate(data))}
@@ -100,7 +100,6 @@ const Register = () => {
                 <p className="text-red-600 text-xs mt-1">{errors.username.message}</p>
               )}
             </div>
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -115,14 +114,13 @@ const Register = () => {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: "Format email tidak valid"
                     }
-                 })}
-                 placeholder="email@example.com"
+                  })}
+                  placeholder="email@example.com"
               />
               {errors.email && (
                 <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>
               )}
             </div>
-
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
@@ -142,10 +140,6 @@ const Register = () => {
                 <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>
               )}
             </div>
-
-            {/* =========================================== */}
-            {/* === AWAL TAMBAHAN UNTUK PEMILIHAN ROLE === */}
-            {/* =========================================== */}
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                 Daftar Sebagai
@@ -156,20 +150,13 @@ const Register = () => {
                 {...register("role", { required: "Peran wajib dipilih" })}
               >
                 <option value="user">User</option>
-                {/* PENTING: Opsi 'admin' ini harus dikontrol dengan sangat ketat di backend */}
-                {/* Jika ini adalah registrasi publik, sebaiknya HAPUS opsi 'admin' dari frontend */}
-                {/* atau sembunyikan berdasarkan kondisi tertentu (misalnya, jika ada kode khusus) */}
+                {/* Opsi admin sebaiknya tidak ditampilkan di registrasi publik */}
                 <option value="admin">Admin</option>
               </select>
               {errors.role && (
                 <p className="text-red-600 text-xs mt-1">{errors.role.message}</p>
               )}
             </div>
-            {/* ========================================= */}
-            {/* === AKHIR TAMBAHAN UNTUK PEMILIHAN ROLE === */}
-            {/* ========================================= */}
-
-
             <button
               type="submit"
               className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
@@ -178,7 +165,6 @@ const Register = () => {
               {isPending ? "Mendaftar..." : "Daftar Akun"}
             </button>
           </form>
-
           <p className="mt-8 text-center text-sm text-gray-600">
             Sudah punya akun?{" "}
             <Link
