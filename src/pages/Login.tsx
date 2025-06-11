@@ -21,18 +21,19 @@ const Login = () => {
 
   const handleLogin = async (data: LoginInput) => {
     try {
-      const res = await axios.post<{ accessToken: string; user: any }>(
+      // DIUBAH: Menyesuaikan tipe respons agar cocok dengan backend (access_token)
+      const res = await axios.post<{ access_token: string; user: any }>(
         "/auth/login", 
         {
-          // DIUBAH: Mengirim field 'email' yang diharapkan oleh backend
           email: data.email, 
           password: data.password
         }
       );
 
-      // Pengecekan runtime tetap ada untuk memastikan data dari server valid
-      if (res.data && res.data.accessToken && res.data.user && res.data.user.role) {
-        login(res.data.accessToken, res.data.user);
+      // DIUBAH: Pengecekan disesuaikan menjadi 'access_token'
+      if (res.data && res.data.access_token && res.data.user && res.data.user.role) {
+        // DIUBAH: Mengirim 'access_token' ke fungsi login
+        login(res.data.access_token, res.data.user);
         toast.success("Login berhasil!");
         navigate("/");
       } else {
