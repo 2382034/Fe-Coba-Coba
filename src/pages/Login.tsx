@@ -19,23 +19,19 @@ const Login = () => {
     formState: { errors }
   } = useForm<LoginInput>();
 
-  // DIHAPUS: Definisi interface lokal UserFromBackend dihapus untuk menghindari konflik tipe.
-
   const handleLogin = async (data: LoginInput) => {
     try {
-      // DIUBAH: Tipe 'user' diubah menjadi 'any' untuk menerima struktur apa pun dari backend.
-      // Ini akan menyelesaikan error ketidakcocokan tipe data.
       const res = await axios.post<{ accessToken: string; user: any }>(
         "/auth/login", 
         {
-          username: data.email, 
+          // DIUBAH: Mengirim field 'email' yang diharapkan oleh backend
+          email: data.email, 
           password: data.password
         }
       );
 
       // Pengecekan runtime tetap ada untuk memastikan data dari server valid
       if (res.data && res.data.accessToken && res.data.user && res.data.user.role) {
-        // Baris ini sekarang seharusnya tidak menyebabkan error tipe lagi
         login(res.data.accessToken, res.data.user);
         toast.success("Login berhasil!");
         navigate("/");
