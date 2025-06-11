@@ -1,14 +1,14 @@
-// src/components/mahasiswa/MahasiswaForm.tsx
+// src/components/MahasiswaForm.tsx
 import React, { useEffect, useState } from 'react';
-import { useForm, SubmitHandler, Controller, FieldError } from 'react-hook-form'; // Impor FieldError
+import { useForm, SubmitHandler, Controller, FieldError } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProdiList, getMahasiswaFotoUrl } from '../services/mahasiswaApi';
-import { Mahasiswa, Prodi } from '../types/mahasiswa'; // Hapus DTO yang tidak digunakan di sini
+import { api } from '../services/mahasiswaApi'; // DIUBAH: Mengimpor objek 'api'
+import { Mahasiswa, Prodi } from '../types/mahasiswa';
 
 export interface MahasiswaFormData {
   nama: string;
   nim: string;
-  prodi_id: number | null; // Simpan sebagai number atau null
+  prodi_id: number | null;
   alamat: {
     jalan: string;
     kota: string;
@@ -42,7 +42,7 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
     defaultValues: {
       nama: '',
       nim: '',
-      prodi_id: null, // Default ke null
+      prodi_id: null,
       alamat: {
         jalan: '',
         kota: '',
@@ -58,7 +58,8 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
 
   const { data: prodiList, isLoading: isLoadingProdi } = useQuery<Prodi[]>({
     queryKey: ['prodiList'],
-    queryFn: fetchProdiList,
+    // DIUBAH: Pemanggilan fungsi melalui objek api
+    queryFn: api.prodi.getAll,
   });
 
   useEffect(() => {
@@ -66,7 +67,7 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
       reset({
         nama: initialData.nama,
         nim: initialData.nim,
-        prodi_id: initialData.prodi_id ?? null, // Gunakan null jika prodi_id undefined/null
+        prodi_id: initialData.prodi_id ?? null,
         alamat: {
           jalan: initialData.alamat?.jalan || '',
           kota: initialData.alamat?.kota || '',
@@ -76,12 +77,13 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
         fotoFile: null,
       });
       if (initialData.foto) {
-        setFotoPreview(getMahasiswaFotoUrl(initialData.foto) || null);
+        // DIUBAH: Pemanggilan fungsi melalui objek api
+        setFotoPreview(api.utils.getMahasiswaFotoUrl(initialData.foto) || null);
       } else {
         setFotoPreview(null);
       }
     } else {
-      reset({ // Pastikan reset untuk form pembuatan
+      reset({
         nama: '',
         nim: '',
         prodi_id: null,
@@ -93,7 +95,6 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
   }, [initialData, reset]);
 
   useEffect(() => {
-    // ... (logika fotoPreview terlihat oke, pastikan getMahasiswaFotoUrl menangani null/undefined dengan baik)
     if (fotoFileWatcher && fotoFileWatcher.length > 0) {
       const file = fotoFileWatcher[0];
       const reader = new FileReader();
@@ -102,7 +103,8 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
       };
       reader.readAsDataURL(file);
     } else if (fotoFileWatcher && fotoFileWatcher.length === 0) {
-      setFotoPreview(initialData?.foto ? (getMahasiswaFotoUrl(initialData.foto) || null) : null);
+        // DIUBAH: Pemanggilan fungsi melalui objek api
+      setFotoPreview(initialData?.foto ? (api.utils.getMahasiswaFotoUrl(initialData.foto) || null) : null);
     }
   }, [fotoFileWatcher, initialData]);
 
@@ -113,35 +115,32 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white p-6 shadow-md rounded-lg">
-      {/* Nama */}
       <div>
         <label htmlFor="nama" className={labelStyle}>Nama Mahasiswa</label>
         <input id="nama" type="text" {...register('nama', { required: 'Nama wajib diisi' })} className={inputStyle} disabled={isSubmitting} />
         {errors.nama && <p className={errorStyle}>{errors.nama.message}</p>}
       </div>
 
-      {/* NIM */}
       <div>
         <label htmlFor="nim" className={labelStyle}>NIM</label>
         <input id="nim" type="text" {...register('nim', { required: 'NIM wajib diisi' })} className={inputStyle} disabled={isSubmitting} />
         {errors.nim && <p className={errorStyle}>{errors.nim.message}</p>}
       </div>
 
-      {/* Prodi ID */}
       <div>
         <label htmlFor="prodi_id" className={labelStyle}>Program Studi</label>
         <Controller
           name="prodi_id"
           control={control}
-          rules={{ validate: (value) => value !== null || 'Prodi wajib dipilih' }} // Validasi terhadap null
+          rules={{ validate: (value) => value !== null || 'Prodi wajib dipilih' }}
           render={({ field }) => (
             <select
               id="prodi_id"
               {...field}
-              value={field.value === null ? '' : field.value} // Gunakan '' untuk <option value="">
+              value={field.value === null ? '' : field.value}
               onChange={(e) => {
                 const val = e.target.value;
-                field.onChange(val === '' ? null : Number(val)); // Set ke null atau number
+                field.onChange(val === '' ? null : Number(val));
               }}
               className={inputStyle}
               disabled={isSubmitting || isLoadingProdi}
@@ -158,8 +157,6 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
         {errors.prodi_id && <p className={errorStyle}>{(errors.prodi_id as FieldError).message}</p>}
       </div>
 
-
-      {/* Fieldset Alamat */}
       <fieldset className="border p-4 rounded-md">
         <legend className="text-lg font-medium text-slate-900 px-1">Alamat</legend>
         <div className="space-y-4 mt-2">
@@ -186,7 +183,6 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
         </div>
       </fieldset>
 
-      {/* File Foto */}
       <div>
         <label htmlFor="fotoFile" className={labelStyle}>Foto Mahasiswa</label>
         <input id="fotoFile" type="file" accept="image/*" {...register('fotoFile')} className={`${inputStyle} file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100`} disabled={isSubmitting} />
@@ -199,7 +195,6 @@ const MahasiswaForm: React.FC<MahasiswaFormProps> = ({
         {errors.fotoFile && <p className={errorStyle}>{errors.fotoFile.message}</p>}
       </div>
 
-      {/* Tombol Submit */}
       <button type="submit" disabled={isSubmitting} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-slate-400">
         {isSubmitting ? 'Menyimpan...' : submitButtonText}
       </button>
