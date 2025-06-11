@@ -1,10 +1,10 @@
-// src/pages/mahasiswa/AddData.tsx
+// src/pages/AddData.tsx
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import MahasiswaForm, { MahasiswaFormData } from '../components/MahasiswaForm';
-import { createMahasiswa, uploadMahasiswaFoto } from '../services/mahasiswaApi';
+import { api } from '../services/mahasiswaApi'; // DIUBAH: Mengimpor objek 'api'
 import { CreateMahasiswaDto } from '../types/mahasiswa';
 
 const AddDataMahasiswaPage: React.FC = () => {
@@ -13,13 +13,13 @@ const AddDataMahasiswaPage: React.FC = () => {
 
   const createMutation = useMutation({
     mutationFn: async (formData: MahasiswaFormData) => {
-      if (formData.prodi_id === null) { // Seharusnya tidak terjadi jika validasi bekerja
-          throw new Error("Prodi ID tidak boleh null saat membuat mahasiswa baru.");
+      if (formData.prodi_id === null) {
+        throw new Error("Prodi ID tidak boleh null saat membuat mahasiswa baru.");
       }
       const createDto: CreateMahasiswaDto = {
         nama: formData.nama,
         nim: formData.nim,
-        prodi_id: formData.prodi_id, // formData.prodi_id adalah number | null, CreateMahasiswaDto mengharapkan number
+        prodi_id: formData.prodi_id,
         alamat: {
           jalan: '',
           kota: '',
@@ -28,25 +28,25 @@ const AddDataMahasiswaPage: React.FC = () => {
         },
       };
 
-      const newMahasiswa = await createMahasiswa(createDto);
+      // DIUBAH: Pemanggilan fungsi melalui objek api
+      const newMahasiswa = await api.mahasiswa.create(createDto);
 
-      // If fotoFile exists, upload it
       if (formData.fotoFile && formData.fotoFile.length > 0) {
         try {
-          await uploadMahasiswaFoto(newMahasiswa.id, formData.fotoFile[0]);
+          // DIUBAH: Pemanggilan fungsi melalui objek api
+          await api.mahasiswa.uploadFoto(newMahasiswa.id, formData.fotoFile[0]);
         } catch (uploadError) {
-          // Decide how to handle: maybe delete the created mahasiswa or warn user
           toast.error('Mahasiswa dibuat, tapi gagal upload foto. Anda bisa menguploadnya di halaman edit.');
           console.error("Foto upload failed after creation:", uploadError);
-          // Optionally, re-throw or navigate differently
         }
       }
       return newMahasiswa;
     },
     onSuccess: () => {
       toast.success('Mahasiswa berhasil ditambahkan!');
+      // DIUBAH: Gunakan queryKey yang lebih spesifik jika memungkinkan, agar tidak invalidate semua list
       queryClient.invalidateQueries({ queryKey: ['mahasiswaList'] });
-      navigate('/data-mahasiswa'); // Or to the detail page: `/data-mahasiswa/${newMahasiswa.id}`
+      navigate('/data-mahasiswa');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Gagal menambahkan mahasiswa.');
