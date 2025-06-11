@@ -1,15 +1,9 @@
-// src/pages/Data.tsx  <-- Asumsi lokasi file Anda
+// src/pages/Data.tsx
 import React, { useState } from 'react';
-// Pastikan impor keepPreviousData jika menggunakan v5+
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { Link } from 'react-router-dom'; // useNavigate tidak digunakan, bisa dihapus
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import {
-  fetchMahasiswaList,
-  deleteMahasiswa,
-  fetchProdiList,
-  getMahasiswaFotoUrl
-} from '../services/mahasiswaApi'; // DIPERBAIKI: ../
+import { api } from '../services/mahasiswaApi'; // DIUBAH: Mengimpor objek 'api'
 import {
   Mahasiswa,
   Prodi,
@@ -17,8 +11,8 @@ import {
   SortMahasiswaBy,
   SortOrder,
   PaginatedMahasiswaResponse
-} from '../types/mahasiswa'; // DIPERBAIKI: ../
-import { useAuth } from '../utils/AuthProvider'; // DIPERBAIKI: ../
+} from '../types/mahasiswa';
+import { useAuth } from '../utils/AuthProvider';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -44,7 +38,8 @@ const DataMahasiswaPage: React.FC = () => {
 
   const { data: prodiList } = useQuery<Prodi[], Error>({
     queryKey: ['prodiList'],
-    queryFn: fetchProdiList,
+    // DIUBAH: Pemanggilan fungsi melalui objek api
+    queryFn: api.prodi.getAll,
   });
 
   const {
@@ -55,10 +50,8 @@ const DataMahasiswaPage: React.FC = () => {
     error,
   } = useQuery<PaginatedMahasiswaResponse, Error>({
     queryKey: ['mahasiswaList', queryParams],
-    queryFn: () => fetchMahasiswaList(queryParams),
-    // Untuk TanStack Query v4:
-    // keepPreviousData: true,
-    // Untuk TanStack Query v5+: (pastikan keepPreviousData diimpor dari @tanstack/react-query)
+    // DIUBAH: Pemanggilan fungsi melalui objek api
+    queryFn: () => api.mahasiswa.getAll(queryParams),
     placeholderData: keepPreviousData,
   });
 
@@ -67,7 +60,8 @@ const DataMahasiswaPage: React.FC = () => {
   const totalPages: number = mahasiswaPaginatedData?.totalPages || 1;
 
   const deleteMutation = useMutation<void, Error, number>({
-    mutationFn: deleteMahasiswa,
+    // DIUBAH: Pemanggilan fungsi melalui objek api
+    mutationFn: api.mahasiswa.delete,
     onSuccess: () => {
       toast.success('Mahasiswa berhasil dihapus!');
       queryClient.invalidateQueries({ queryKey: ['mahasiswaList'] });
@@ -78,10 +72,13 @@ const DataMahasiswaPage: React.FC = () => {
   });
 
   const handleDelete = (id: number, nama: string) => {
+    // Ganti window.confirm dengan modal custom jika memungkinkan
     if (window.confirm(`Apakah Anda yakin ingin menghapus mahasiswa "${nama}"?`)) {
       deleteMutation.mutate(id);
     }
   };
+
+  // Handler lainnya tidak perlu diubah
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -103,22 +100,18 @@ const DataMahasiswaPage: React.FC = () => {
     setSortOrder(e.target.value as SortOrder);
     setCurrentPage(1);
   };
-
-  // useEffect untuk refetch tidak lagi diperlukan karena queryParams ada di queryKey
-  // React Query akan menangani refetch secara otomatis.
-
+  
   const buttonStyle = "px-4 py-2 text-sm font-medium rounded-md";
   const primaryButtonStyle = `${buttonStyle} text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`;
   const secondaryButtonStyle = `${buttonStyle} text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2`;
   const dangerButtonStyle = `${buttonStyle} text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`;
 
-  // Gunakan isLoading untuk loading awal, isFetching untuk update di background
   if (isLoading) return <div className="text-center p-10">Memuat data mahasiswa...</div>;
   if (isError && !mahasiswaPaginatedData) return <div className="text-center p-10 text-red-500">Error: {(error as any)?.message || 'Gagal memuat data.'}</div>;
 
   return (
     <div className="container mx-auto p-4 md:p-6">
-      {isFetching && !isLoading && ( // Tampilkan feedback jika sedang fetching di background
+      {isFetching && !isLoading && (
         <div className="text-center text-sm text-slate-500 mb-2">Memperbarui data...</div>
       )}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -130,72 +123,40 @@ const DataMahasiswaPage: React.FC = () => {
         )}
       </div>
 
-      {/* Filters and Search */}
       <div className="mb-6 p-4 bg-slate-50 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-slate-700">
-              Cari (Nama/NIM)
-            </label>
-            <input
-              type="text"
-              id="search"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Ketik untuk mencari..."
-              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+           {/* Search Input */}
+           <div>
+            <label htmlFor="search" className="block text-sm font-medium text-slate-700">Cari (Nama/NIM)</label>
+            <input type="text" id="search" value={searchTerm} onChange={handleSearchChange} placeholder="Ketik untuk mencari..." className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"/>
           </div>
+           {/* Prodi Filter */}
           <div>
-            <label htmlFor="filterProdi" className="block text-sm font-medium text-slate-700">
-              Filter Prodi
-            </label>
-            <select
-              id="filterProdi"
-              value={filterProdiId || ''}
-              onChange={handleFilterProdiChange}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            >
+            <label htmlFor="filterProdi" className="block text-sm font-medium text-slate-700">Filter Prodi</label>
+            <select id="filterProdi" value={filterProdiId || ''} onChange={handleFilterProdiChange} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
               <option value="">Semua Prodi</option>
-              {prodiList?.map((prodi) => (
-                <option key={prodi.id} value={prodi.id}>
-                  {prodi.nama_prodi}
-                </option>
-              ))}
+              {prodiList?.map((prodi) => (<option key={prodi.id} value={prodi.id}>{prodi.nama_prodi}</option>))}
             </select>
           </div>
+           {/* Sort By */}
           <div>
-            <label htmlFor="sortBy" className="block text-sm font-medium text-slate-700">
-              Urutkan Berdasarkan
-            </label>
-            <select
-              id="sortBy"
-              value={sortBy}
-              onChange={handleSortChange}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            >
+            <label htmlFor="sortBy" className="block text-sm font-medium text-slate-700">Urutkan Berdasarkan</label>
+            <select id="sortBy" value={sortBy} onChange={handleSortChange} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
               <option value={SortMahasiswaBy.NAMA}>Nama</option>
               <option value={SortMahasiswaBy.NIM}>NIM</option>
             </select>
           </div>
+           {/* Sort Order */}
           <div>
-            <label htmlFor="sortOrder" className="block text-sm font-medium text-slate-700">
-              Urutan
-            </label>
-            <select
-              id="sortOrder"
-              value={sortOrder}
-              onChange={handleOrderChange}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            >
+            <label htmlFor="sortOrder" className="block text-sm font-medium text-slate-700">Urutan</label>
+            <select id="sortOrder" value={sortOrder} onChange={handleOrderChange} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
               <option value={SortOrder.ASC}>Ascending (A-Z)</option>
               <option value={SortOrder.DESC}>Descending (Z-A)</option>
             </select>
           </div>
         </div>
       </div>
-
-      {/* Mahasiswa Table */}
+      
       <div className="overflow-x-auto bg-white shadow-md rounded-lg">
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-100">
@@ -214,7 +175,8 @@ const DataMahasiswaPage: React.FC = () => {
                 <tr key={mhs.id} className="hover:bg-slate-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img
-                      src={getMahasiswaFotoUrl(mhs.foto) || 'https://via.placeholder.com/50'}
+                      // DIUBAH: Pemanggilan fungsi melalui objek api
+                      src={api.utils.getMahasiswaFotoUrl(mhs.foto) || 'https://via.placeholder.com/50'}
                       alt={mhs.nama}
                       className="h-12 w-12 rounded-full object-cover"
                     />
@@ -227,17 +189,12 @@ const DataMahasiswaPage: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <Link to={`/data-mahasiswa/${mhs.id}`} className={`${secondaryButtonStyle} !py-1 !px-2`}>
-                        Detail
-                      </Link>
+                      <Link to={`/data-mahasiswa/${mhs.id}`} className={`${secondaryButtonStyle} !py-1 !px-2`}>Detail</Link>
                       {isAdmin && (
                         <>
-                          <Link to={`/data-mahasiswa/edit/${mhs.id}`} className={`${primaryButtonStyle} !py-1 !px-2 !bg-yellow-500 hover:!bg-yellow-600`}>
-                            Edit
-                          </Link>
+                          <Link to={`/data-mahasiswa/edit/${mhs.id}`} className={`${primaryButtonStyle} !py-1 !px-2 !bg-yellow-500 hover:!bg-yellow-600`}>Edit</Link>
                           <button
                             onClick={() => handleDelete(mhs.id, mhs.nama)}
-                            // Gunakan isPending dari deleteMutation jika TanStack Query v5+
                             disabled={deleteMutation.isPending && deleteMutation.variables === mhs.id}
                             className={`${dangerButtonStyle} !py-1 !px-2`}
                           >
@@ -260,27 +217,12 @@ const DataMahasiswaPage: React.FC = () => {
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-6 flex justify-between items-center">
-          <p className="text-sm text-slate-700">
-            Halaman {currentPage} dari {totalPages} (Total {totalCount} data)
-          </p>
+          <p className="text-sm text-slate-700">Halaman {currentPage} dari {totalPages} (Total {totalCount} data)</p>
           <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1 || isFetching } // Gunakan isFetching agar tombol disable saat data baru dimuat
-              className={`${secondaryButtonStyle} disabled:opacity-50`}
-            >
-              Sebelumnya
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages || isFetching } // Gunakan isFetching
-              className={`${secondaryButtonStyle} disabled:opacity-50`}
-            >
-              Berikutnya
-            </button>
+            <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1 || isFetching} className={`${secondaryButtonStyle} disabled:opacity-50`}>Sebelumnya</button>
+            <button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || isFetching} className={`${secondaryButtonStyle} disabled:opacity-50`}>Berikutnya</button>
           </div>
         </div>
       )}
